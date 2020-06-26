@@ -2,6 +2,7 @@
 # from subprocess import Popen, PIPE
 from time import sleep
 from datetime import datetime
+import os
 import subprocess
 import board
 import digitalio 
@@ -25,7 +26,7 @@ lcd_d7 = digitalio.DigitalInOut(board.D24)
 lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6,
                                       lcd_d7, lcd_columns, lcd_rows)
  
-# looking for an active Ethernet or WiFi device
+# Looking for an active Ethernet or WiFi device
 def find_interface():
     find_device = "ip addr show"
     interface_parse = run_cmd(find_device)
@@ -44,13 +45,28 @@ def parse_ip():
             ip = line.split(' ')[5]
             ip = ip.split('/')[0]
     return ip
- 
+
+
+def load_average():
+    load1, load5, load15 = os.getloadavg()
+    if (load1 < 1.0):
+        pips = int(16 * load1)
+        if (pips == 0):
+            pips = 1
+        string = ("*" * pips) + ("-" * (16-pips))
+    else:
+        string = string(load5)
+    return string
+
+
 # run unix shell command, return as ASCII
 def run_cmd(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     output = p.communicate()[0]
     return output.decode('ascii')
- 
+
+
+
 # wipe LCD screen before we start
 lcd.clear()
  
@@ -65,9 +81,8 @@ while True:
     lcd_line_1 = datetime.now().strftime('%b %d  %H:%M:%S\n')
  
     # current ip address
-    lcd_line_2 = "IP " + ip_address
+    lcd_line_2 = load_average();
  
     # combine both lines into one update to the display
     lcd.message = lcd_line_1 + lcd_line_2
-    print('.');
-    sleep(2)
+    sleep(1)
